@@ -18,6 +18,7 @@ export function MainMenu(p: {
   onContinue: () => void;
   onGallery: () => void;
   onSettings: () => void;
+  onSupport: () => void;
   message?: string | null;
 }) {
   const auto = saveInfo('auto');
@@ -55,6 +56,7 @@ export function MainMenu(p: {
           <button className={`btn ${auto ? '' : 'primary'} play-btn`} onClick={() => p.onPlay(diff, scen)}>▶ Nova partida</button>
           <button className="btn" onClick={p.onGallery}>Finais <span className="dim">({p.meta.discoveredEndings.length}/{Object.keys(ENDINGS).length})</span></button>
           <button className="btn" onClick={p.onSettings}>Configurações</button>
+          <button className="btn menu-support" onClick={p.onSupport}>Apoiar o projeto</button>
         </nav>
         {p.message && <p className="bad" role="alert" style={{ marginTop: 16 }}>{p.message}</p>}
       </div>

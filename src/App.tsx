@@ -9,13 +9,33 @@ import type { GameState, EndingId } from './engine/types';
 import { createGame } from './engine/world';
 import { EndScreen } from './ui/EndScreen';
 import { GameScreen } from './ui/GameScreen';
+import { Landing } from './ui/Landing';
 import { Gallery, MainMenu, SettingsPanel } from './ui/Screens';
 
 type Screen =
   | { id: 'menu' }
   | { id: 'game'; state: GameState; key: number }
   | { id: 'end'; state: GameState; fresh: string[] }
-  | { id: 'gallery' };
+  | { id: 'gallery' }
+  | { id: 'landing'; donate?: boolean };
+
+const LANDING_KEY = 'echo-zero.landing-visto';
+
+/** A página de apresentação aparece só na primeira visita. */
+function landingSeen(): boolean {
+  try {
+    return localStorage.getItem(LANDING_KEY) === '1';
+  } catch {
+    return true;
+  }
+}
+function markLandingSeen() {
+  try {
+    localStorage.setItem(LANDING_KEY, '1');
+  } catch {
+    /* sem armazenamento: tudo bem, ela só aparece de novo */
+  }
+}
 
 /**
  * Atalho de desenvolvimento: ?quick=N[&lean=s] inicia uma partida já avançada N dias (testes visuais).
@@ -53,7 +73,10 @@ function devQuickStart(): Screen | null {
 }
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>(() => devQuickStart() ?? { id: 'menu' });
+  const [screen, setScreen] = useState<Screen>(() => {
+    if (import.meta.env.DEV && new URLSearchParams(location.search).has('landing')) return { id: 'landing' };
+    return devQuickStart() ?? (landingSeen() ? { id: 'menu' } : { id: 'landing' });
+  });
   const [meta, setMeta] = useState<CampaignMeta>(() => loadMeta());
   const [settings, setSettingsState] = useState<Settings>(() => loadSettings());
   const [showSettings, setShowSettings] = useState(false);
@@ -95,9 +118,13 @@ export default function App() {
 
   return (
     <>
+      {screen.id === 'landing' && (
+        <Landing settings={settings} focusDonate={screen.donate} onPlay={() => { markLandingSeen(); setScreen({ id: 'menu' }); }} />
+      )}
       {screen.id === 'menu' && (
         <MainMenu meta={meta} settings={settings} message={message} onPlay={play} onContinue={resume}
-          onGallery={() => setScreen({ id: 'gallery' })} onSettings={() => setShowSettings(true)} />
+          onGallery={() => setScreen({ id: 'gallery' })} onSettings={() => setShowSettings(true)}
+          onSupport={() => setScreen({ id: 'landing', donate: true })} />
       )}
       {screen.id === 'gallery' && <Gallery meta={meta} settings={settings} onBack={() => setScreen({ id: 'menu' })} />}
       {screen.id === 'game' && (
